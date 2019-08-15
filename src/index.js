@@ -13,16 +13,6 @@ const app = express()
 const connects = []
 const port = process.env.PORT || 3000
 const router = express.Router()
-const lorem = new LoremIpsum({
-        sentencesPerParagraph: {
-            max: 8,
-            min: 4
-        },
-        wordsPerSentence: {
-            max: 10,
-            min: 10
-        }
-    })
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -50,14 +40,13 @@ app.ws('/:id', (ws, req) => {
             connects.forEach(socket => {
 
                 console.log(socket.name)
-                if (socket.name !== data.name) {
+                if (socket.name === data.otherUser) {
 
                     fs.readFile(`./tests/${data.name}.json`, (err, data) => {
 
                         err && socket.send(err)
                         const loremIpsum = JSON.parse(data.toString('utf8'))
                         loremIpsum.test.forEach(e => {
-                            console.log(e)
                             return socket.send(e)
                             })                        
                    
@@ -70,12 +59,6 @@ app.ws('/:id', (ws, req) => {
     })
 })
 
-// app.ws('/close', (ws, req) => {
-//     ws.on('close', () => {
-//         ws.send('WebSocket was closed')
-//     })
-// })
-
 app.get('/test/:test', (req, res) => {
     fs.readFile(`./tests/${req.params.test}.json`, (err, data) => {
         err && console.log('error', err)
@@ -83,19 +66,33 @@ app.get('/test/:test', (req, res) => {
     })
 })
 
-app.get('/lorem/:test', (req, res) => {
-    const test = []
-    for(let i=0; i<10; ++i) {
-        test.push(lorem.generateSentences(1))
-    }
-    const jsonContent = JSON.stringify({test}) 
-    fs.writeFile(`./tests/${req.params.test}.json`, jsonContent, 'utf8', function (err) {
-        if (err) {
-            console.log("An error occured while writing JSON Object to File.")
-            return console.log(err)
-        } 
-        console.log("JSON file has been saved.")
+app.get('/lorem', async (req, res) => {
+    const lorem = new LoremIpsum({
+        sentencesPerParagraph: {
+            max: 8,
+            min: 4
+        },
+        wordsPerSentence: {
+            max: 100,
+            min: 100
+        }
     })
+    for(let cantSentence=1000; cantSentence<=10000; cantSentence+=250) {
+        const test = []
+        for(let i=0; i<cantSentence; ++i) {
+            test.push(lorem.generateSentences(1))
+        }
+        const jsonContent = await JSON.stringify({test}) 
+        fs.writeFile(`../tests/${cantSentence}.json`, jsonContent, 'utf8', function (err) {
+            if (err) {
+                console.log("An error occured while writing JSON Object to File.")
+                return console.log(err)
+            } 
+            console.log("JSON file has been saved.")
+        })
+        console.log('lorem:', cantSentence)
+    }
+
     res.send('ok')
 })
 
