@@ -1,8 +1,6 @@
 import express from 'express'
 import bodyParser from 'body-parser'
 import methodOverride from 'method-override'
-import mongoose from 'mongoose'
-import cors from 'cors'
 import enableWs from 'express-ws'
 import { LoremIpsum } from 'lorem-ipsum'
 import fs from 'fs'
@@ -16,7 +14,6 @@ const router = express.Router()
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-app.use(cors())
 app.use(methodOverride())
 app.use(router)
 
@@ -66,7 +63,7 @@ app.get('/test/:test', (req, res) => {
     })
 })
 
-app.get('/lorem', async (req, res) => {
+app.get('/loremxsentences', async (req, res) => {
     const lorem = new LoremIpsum({
         sentencesPerParagraph: {
             max: 8,
@@ -91,6 +88,36 @@ app.get('/lorem', async (req, res) => {
             console.log("JSON file has been saved.")
         })
         console.log('lorem:', cantSentence)
+    }
+
+    res.send('ok')
+})
+
+app.get('/loremxwords', async (req, res) => {
+    for(let cantWords=1000; cantWords<=10000; cantWords+=250) {
+        let lorem = new LoremIpsum({
+            sentencesPerParagraph: {
+                max: 8,
+                min: 4
+            },
+            wordsPerSentence: {
+                max: cantWords,
+                min: cantWords
+            }
+        })
+        const test = []
+        for(let i=0; i<100; ++i) {
+            test.push(lorem.generateSentences(1))
+        }
+        const jsonContent = await JSON.stringify({test}) 
+        fs.writeFile(`../tests/${cantWords}.json`, jsonContent, 'utf8', function (err) {
+            if (err) {
+                console.log("An error occured while writing JSON Object to File.")
+                return console.log(err)
+            } 
+            console.log("JSON file has been saved.")
+        })
+        console.log('lorem:', cantWords)
     }
 
     res.send('ok')
